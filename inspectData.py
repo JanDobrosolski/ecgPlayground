@@ -35,13 +35,21 @@ if __name__ == "__main__":
 
         # Iterate over the sampled rows and plot each one in a subplot
         for i, (idx, row) in enumerate(sampled_rows.iterrows()):
-            rowData = row.to_list()
+            rowPlot = row.to_list()
+            rowPlot = rowPlot[:-1]
+            
+            rowData = row.to_numpy()
+            
+            rowLabel = rowData[-1]
+            rowData = rowData[:-1]
+            rowData = rowData[np.where(rowData != 0.)[0]]
+
             try:
-                wd, m = hp.process(row.to_numpy(), SAMPLING_FREQUENCY)
+                wd, m = hp.process(rowData, SAMPLING_FREQUENCY)
             except:
                 continue
 
-            xLabels = [i for i in range(len(rowData))]
+            xLabels = [i for i in range(len(rowPlot))]
             measuresDict[idx] = {}
 
             rPeakIndices = wd['peaklist']
@@ -56,7 +64,7 @@ if __name__ == "__main__":
             measuresDict[idx]['peakList'] = [int(x) for x in wd['peaklist']] #list of detected peaks
             measuresDict[idx]['peakValues'] = list(rPeakValues) #list of values of detected peaks
 
-            axs[processed].plot(xLabels, rowData)
+            axs[processed].plot(xLabels, rowPlot)
             axs[processed].plot(rPeakIndices, rPeakValues, 'ro')
             axs[processed].set_title(f"Sample {idx}")
 
