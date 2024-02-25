@@ -1,0 +1,2 @@
+kaggle==1.6.6
+heartpy==1.2.7
