@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-import xgboost as xgb
+import lightgbm as lgbm
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, jaccard_score, confusion_matrix
 import json
 import matplotlib.pyplot as plt
@@ -34,16 +34,34 @@ if __name__ == "__main__":
     X_train, X_temp, y_train, y_temp = train_test_split(x, y, test_size=0.2, random_state=42)
     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
-    model = xgb.XGBClassifier(use_label_encoder=False, eval_metric='logloss')
+    train_data = lgbm.Dataset(X_train, label=y_train)
+    valid_data = lgbm.Dataset(X_val, label=y_val)
 
-    model.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_val, y_val)])
+    parameters = {
+        'objective': 'binary',
+        'metric': 'binary_logloss',
+        'is_unbalance': 'true',
+        'boosting': 'gbdt',
+        'num_leaves': 64,
+        'feature_fraction': 0.5,
+        'bagging_fraction': 0.5,
+        'bagging_freq': 20,
+        'learning_rate': 0.05,
+        'verbose': 1
+    }
+
+    model = lgbm.train(parameters,
+                      train_data,
+                      valid_sets=valid_data,
+                      num_boost_round=500)
 
     predictions = model.predict(X_test)
+    predictions = (predictions >= 0.5).astype(int)
 
     os.makedirs("results", exist_ok=True)
 
-    xgbResultPath = os.path.join("results", "xgb")
-    os.makedirs(xgbResultPath, exist_ok=True)
+    lgbmResultPath = os.path.join("results", "lgbm")
+    os.makedirs(lgbmResultPath, exist_ok=True)
 
     cm = confusion_matrix(y_test, predictions)
     TN, FP, FN, TP = cm.ravel()
@@ -55,12 +73,12 @@ if __name__ == "__main__":
         "FN": int(FN),
         "accuracy": round(accuracy_score(y_test, predictions)*100, 2),
         "precision": round(precision_score(y_test, predictions)*100, 2),
-        "recall": round(recall_score(y_test, predictions)*100, 2),
-        "F1_score": round(f1_score(y_test, predictions)*100, 2),
+        "recall": round(recall_score(y_test, predictions), 2)*100,
+        "F1_score": round(f1_score(y_test, predictions), 2)*100,
         "jaccard_score": round(jaccard_score(y_test, predictions)*100, 2),
     }
 
-    with open(os.path.join(xgbResultPath, "metrics.json"), 'w') as file:
+    with open(os.path.join(lgbmResultPath, "metrics.json"), 'w') as file:
         json.dump(metrics, file, indent=4)
 
     plt.figure(figsize=(8, 6))
@@ -68,4 +86,4 @@ if __name__ == "__main__":
     plt.ylabel('Actual')
     plt.xlabel('Predicted')
     plt.title('Confusion Matrix')
-    plt.savefig(os.path.join(xgbResultPath, "confusionMatrix.png"))
+    plt.savefig(os.path.join(lgbmResultPath, "confusionMatrix.png"))
