@@ -82,3 +82,34 @@ if __name__ == "__main__":
 
         with open(os.path.join(subdirPath, "measures.json"), "w") as f:
             json.dump(measuresDict, f, indent=4)
+
+    # longer sample to showcase how classic analysis is suboptimal for short samples consisting of a single beat
+    data, timer = hp.load_exampledata(1)
+    sample_rate = hp.get_samplerate_mstimer(timer)
+
+    wd, m = hp.process(data, sample_rate = sample_rate)
+
+    rPeakIndices = wd['peaklist']
+    rPeakValues = [data[j] for j in rPeakIndices]
+
+    longSamplePath = os.path.join("analysisResults", "longSample")
+    os.makedirs(longSamplePath, exist_ok=True)
+
+    xLabels = [i for i in range(len(data))]
+    plt.plot(xLabels, data)
+    plt.plot(rPeakIndices, rPeakValues, 'ro')
+    plt.savefig(os.path.join(longSamplePath, "longerSample.png"))
+    plt.close()
+
+    measuresDict = {}
+
+    measuresDict['bpm'] = m['bpm'] #beats per minute
+    measuresDict['ibi'] = m['ibi'] #inter-beat interval
+    measuresDict['sdnn'] = m['sdnn']  #standard deviation of normal-to-normal intervals
+    measuresDict['RR_std'] = wd['rrsd'] #standard deviation of RR intervals
+    measuresDict['RR_list'] = list(wd['RR_list']) #standard deviation of successive differences
+    measuresDict['peakList'] = [int(x) for x in wd['peaklist']] #list of detected peaks
+    measuresDict['peakValues'] = [int(x) for x in rPeakValues] #list of values of detected peaks
+
+    with open(os.path.join(longSamplePath, "measures.json"), "w") as f:
+        json.dump(measuresDict, f, indent=4)

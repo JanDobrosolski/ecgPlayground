@@ -1,2 +1,5 @@
 kaggle==1.6.6
 heartpy==1.2.7
+pandas==2.2.1
+tensorflow==2.13.0
+matplotlib==3.8.3
