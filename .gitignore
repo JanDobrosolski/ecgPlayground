@@ -2,3 +2,5 @@ dataset/
 analysisResults/
 venv/
 results/
+logs/
+__pycache__/
